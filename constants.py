@@ -1,0 +1,31 @@
+import pygame
+
+# Window settings
+WINDOW_WIDTH = 800
+WINDOW_HEIGHT = 600
+GROUND_HEIGHT = 500
+
+# Game physics
+GRAVITY = 0.8
+JUMP_POWER = 15
+OBSTACLE_SPEED = 5
+MIN_OBSTACLE_DISTANCE = 300
+
+# Sound settings
+SOUND_THRESHOLD = 0.01
+SOUND_AMPLIFICATION = 8.0
+
+# Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+GREEN = (34, 139, 34)
+BROWN = (139, 69, 19)
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)
+YELLOW = (255, 255, 0)
+
+# Audio settings
+CHUNK_SIZE = 512
+CHANNELS = 1
+RATE = 44100
+FORMAT = pygame.paFloat32 
