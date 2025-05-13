@@ -6,6 +6,7 @@ import threading
 import queue
 import time
 import random
+import math
 
 # Initialize Pygame
 pygame.init()
@@ -25,6 +26,9 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GREEN = (34, 139, 34)
 BROWN = (139, 69, 19)
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)
+YELLOW = (255, 255, 0)
 
 # Set up the game window
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -36,13 +40,24 @@ class Obstacle:
         self.height = 60
         self.x = WINDOW_WIDTH
         self.y = GROUND_HEIGHT - self.height
-        self.color = (139, 69, 19)  # Brown color for obstacles
+        self.color = BROWN
         
     def move(self):
         self.x -= OBSTACLE_SPEED
         
     def draw(self, screen):
-        # Draw a pixelated cactus-like obstacle
+        pass
+        
+    def get_rect(self):
+        return pygame.Rect(self.x, self.y, self.width, self.height)
+
+class Cactus(Obstacle):
+    def __init__(self):
+        super().__init__()
+        self.color = (0, 100, 0)  # Dark green
+        
+    def draw(self, screen):
+        # Draw main body
         pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
         # Draw spikes
         for i in range(3):
@@ -52,6 +67,83 @@ class Obstacle:
                 (self.x + self.width + 15, spike_y + 10),
                 (self.x + self.width, spike_y + 20)
             ])
+
+class Tower(Obstacle):
+    def __init__(self):
+        super().__init__()
+        self.height = random.randint(40, 100)  # Random height
+        self.y = GROUND_HEIGHT - self.height
+        self.color = (100, 100, 100)  # Gray
+        
+    def draw(self, screen):
+        # Draw tower base
+        pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
+        # Draw tower top
+        pygame.draw.rect(screen, (150, 150, 150), (self.x - 5, self.y, self.width + 10, 10))
+        # Draw windows
+        window_color = (200, 200, 255)
+        for i in range(2):
+            window_y = self.y + 20 + i * 30
+            pygame.draw.rect(screen, window_color, (self.x + 5, window_y, 10, 15))
+
+class BreakingGround(Obstacle):
+    def __init__(self):
+        super().__init__()
+        self.width = 60
+        self.height = 20
+        self.y = GROUND_HEIGHT - self.height
+        self.color = (139, 69, 19)  # Brown
+        self.cracks = []
+        self.generate_cracks()
+        
+    def generate_cracks(self):
+        for _ in range(3):
+            crack_x = random.randint(0, self.width)
+            crack_y = random.randint(0, self.height)
+            self.cracks.append((crack_x, crack_y))
+            
+    def draw(self, screen):
+        # Draw ground piece
+        pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
+        # Draw cracks
+        for crack_x, crack_y in self.cracks:
+            pygame.draw.line(screen, BLACK, 
+                           (self.x + crack_x, self.y + crack_y),
+                           (self.x + crack_x + random.randint(-5, 5), 
+                            self.y + crack_y + random.randint(-5, 5)), 2)
+
+class BouncingBall(Obstacle):
+    def __init__(self):
+        super().__init__()
+        self.width = 30
+        self.height = 30
+        self.y = GROUND_HEIGHT - self.height
+        self.color = RED
+        self.bounce_height = 50
+        self.original_y = self.y
+        self.bounce_speed = 0.1
+        self.bounce_offset = 0
+        
+    def move(self):
+        self.x -= OBSTACLE_SPEED
+        self.bounce_offset += self.bounce_speed
+        self.y = self.original_y - abs(math.sin(self.bounce_offset)) * self.bounce_height
+        
+    def draw(self, screen):
+        pygame.draw.circle(screen, self.color, 
+                         (int(self.x + self.width/2), int(self.y + self.height/2)), 
+                         int(self.width/2))
+        # Draw eyes
+        eye_color = WHITE
+        pygame.draw.circle(screen, eye_color, 
+                         (int(self.x + self.width/3), int(self.y + self.height/3)), 5)
+        pygame.draw.circle(screen, eye_color, 
+                         (int(self.x + 2*self.width/3), int(self.y + self.height/3)), 5)
+        # Draw pupils
+        pygame.draw.circle(screen, BLACK, 
+                         (int(self.x + self.width/3), int(self.y + self.height/3)), 2)
+        pygame.draw.circle(screen, BLACK, 
+                         (int(self.x + 2*self.width/3), int(self.y + self.height/3)), 2)
 
 class Hen:
     def __init__(self):
@@ -151,6 +243,10 @@ class SoundProcessor:
         self.stream.close()
         self.p.terminate()
 
+def create_obstacle():
+    obstacle_types = [Cactus, Tower, BreakingGround, BouncingBall]
+    return random.choice(obstacle_types)()
+
 def main():
     clock = pygame.time.Clock()
     hen = Hen()
@@ -187,7 +283,7 @@ def main():
             current_time = time.time()
             if current_time - last_obstacle_time > 2:  # Spawn every 2 seconds
                 if not obstacles or WINDOW_WIDTH - obstacles[-1].x > MIN_OBSTACLE_DISTANCE:
-                    obstacles.append(Obstacle())
+                    obstacles.append(create_obstacle())
                     last_obstacle_time = current_time
             
             # Update obstacles
